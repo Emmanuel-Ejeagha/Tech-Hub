@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 from django.views import View
 from django.contrib.auth.models import AnonymousUser
 from django.http import JsonResponse
@@ -21,6 +23,8 @@ def home(request):
         wishitem = len(Wishlist.objects.filter(user=request.user))
     return render(request, 'app/home.html', locals())
 
+
+@login_required
 def about(request):
     """Render the about page."""
     totalitem = 0
@@ -30,6 +34,7 @@ def about(request):
         totalitem = len(Cart.objects.filter(user=request.user))
     return render(request, 'app/about.html', locals())
 
+@login_required
 def contact(request):
     """Render the contact page."""
     totalitem = 0
@@ -39,6 +44,7 @@ def contact(request):
         totalitem = len(Cart.objects.filter(user=request.user))    
     return render(request, 'app/contact.html', locals())
 
+@method_decorator(login_required, name="dispatch")
 class CategoryView(View):
     """View to display products by category."""
     def get(self, request, val):
@@ -51,6 +57,7 @@ class CategoryView(View):
         title = Product.objects.filter(category=val).values('title')
         return render(request, "app/category.html", locals())
 
+@method_decorator(login_required, name="dispatch")
 class CategoryTitle(View):
     """View to display products by title within a category."""
     def get(self, request, val):
@@ -63,6 +70,7 @@ class CategoryTitle(View):
             totalitem = len(Cart.objects.filter(user=request.user))
         return render(request, "app/category.html", locals())
 
+@method_decorator(login_required, name="dispatch")
 class ProductDetail(View):
     """View to display detailed information about a single product."""
     # def get(self, request, pk):
@@ -89,7 +97,7 @@ class ProductDetail(View):
 
         return render(request, "app/productdetail.html", context)
 
-
+@method_decorator(login_required, name="dispatch")
 class CustomerRegistrationView(View):
     """View to handle customer registration."""
     def get(self, request):
@@ -111,6 +119,7 @@ class CustomerRegistrationView(View):
             messages.warning(request, "Invalid Input Data")
         return render(request, 'app/signup.html', {'form': form})
 
+@method_decorator(login_required, name="dispatch")
 class ProfileView(View):
     """View to handle customer profile."""
     def get(self, request):
@@ -141,6 +150,7 @@ class ProfileView(View):
             messages.warning(request, "Invalid Input Data")
         return render(request, 'app/profile.html', {'form': form})
 
+@login_required
 def address(request):
     """View to display the customer's addresses."""
     add = Customer.objects.filter(user=request.user)
@@ -151,6 +161,7 @@ def address(request):
         totalitem = len(Cart.objects.filter(user=request.user))
     return render(request, 'app/address.html', {'add': add})
 
+@method_decorator(login_required, name="dispatch")
 class UpdateAddress(View):
     """View to update a customer's address."""
     def get(self, request, pk):
@@ -173,6 +184,8 @@ class UpdateAddress(View):
             messages.warning(request, "Invalid Input Data")
         return redirect('address')
 
+
+@login_required
 def add_to_cart(request):
     """Add a product to the customer's cart."""
     user = request.user
@@ -181,6 +194,7 @@ def add_to_cart(request):
     Cart(user=user, product=product).save()
     return redirect('/cart')
 
+@login_required
 def show_cart(request):
     """Display the customer's cart."""
     user = request.user
@@ -250,7 +264,7 @@ class Checkout(View):
             'totalamount': totalamount,
         }
         return render(request, 'app/checkout.html', context)
-
+@login_required
 def payment_done(request):
     """Handle the payment success scenario."""
     session_id = request.GET.get('session_id')
@@ -285,6 +299,7 @@ def cancel(request):
     """Render the payment cancellation page."""
     return render(request, 'app/cancel.html')
 
+@login_required
 def orders(request):
     """Display the customer's orders."""
     order_placed = OrderPlaced.objects.filter(user=request.user)
