@@ -9,8 +9,8 @@ django = "*"
 pillow = "*"
 django-allauth = "*"
 razorpay = "*"
-stripe = "*"
 python-dotenv = "*"
+stripe = "*"
 
 [dev-packages]
 
