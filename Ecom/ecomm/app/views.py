@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from .forms import CustomerRegistrationForm, CustomerProfileForm
 from django.contrib import messages
 from django.conf import settings
-import stripe
+import stripe 
 
 # Configure Stripe with the secret API key from settings.
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -24,7 +24,7 @@ def home(request):
     return render(request, 'app/home.html', locals())
 
 
-@login_required
+# @login_required
 def about(request):
     """Render the about page."""
     totalitem = 0
@@ -34,7 +34,7 @@ def about(request):
         totalitem = len(Cart.objects.filter(user=request.user))
     return render(request, 'app/about.html', locals())
 
-@login_required
+# @login_required
 def contact(request):
     """Render the contact page."""
     totalitem = 0
@@ -44,7 +44,7 @@ def contact(request):
         totalitem = len(Cart.objects.filter(user=request.user))    
     return render(request, 'app/contact.html', locals())
 
-@method_decorator(login_required, name="dispatch")
+# @method_decorator(login_required, name="dispatch")
 class CategoryView(View):
     """View to display products by category."""
     def get(self, request, val):
@@ -57,7 +57,7 @@ class CategoryView(View):
         title = Product.objects.filter(category=val).values('title')
         return render(request, "app/category.html", locals())
 
-@method_decorator(login_required, name="dispatch")
+# @method_decorator(login_required, name="dispatch")
 class CategoryTitle(View):
     """View to display products by title within a category."""
     def get(self, request, val):
@@ -70,7 +70,7 @@ class CategoryTitle(View):
             totalitem = len(Cart.objects.filter(user=request.user))
         return render(request, "app/category.html", locals())
 
-@method_decorator(login_required, name="dispatch")
+# @method_decorator(login_required, name="dispatch")
 class ProductDetail(View):
     """View to display detailed information about a single product."""
     # def get(self, request, pk):
@@ -97,7 +97,7 @@ class ProductDetail(View):
 
         return render(request, "app/productdetail.html", context)
 
-@method_decorator(login_required, name="dispatch")
+# @method_decorator(login_required, name="dispatch")
 class CustomerRegistrationView(View):
     """View to handle customer registration."""
     def get(self, request):
@@ -264,6 +264,7 @@ class Checkout(View):
             'totalamount': totalamount,
         }
         return render(request, 'app/checkout.html', context)
+
 @login_required
 def payment_done(request):
     """Handle the payment success scenario."""
@@ -310,6 +311,7 @@ def orders(request):
         totalitem = len(Cart.objects.filter(user=request.user))
     return render(request, 'app/orders.html', locals())
 
+@login_required
 def plus_cart(request):
     """Increase the quantity of a product in the cart."""
     if request.method == 'GET':
@@ -331,6 +333,7 @@ def plus_cart(request):
         }
         return JsonResponse(data)
 
+@login_required
 def minus_cart(request):
     """Decrease the quantity of a product in the cart."""
     if request.method == 'GET':
@@ -352,6 +355,7 @@ def minus_cart(request):
         }
         return JsonResponse(data)
 
+@login_required
 def remove_cart(request):
     """Remove a product from the cart."""
     if request.method == 'GET':
@@ -379,6 +383,7 @@ def remove_cart(request):
         }
         return JsonResponse(data)
 
+@login_required
 def plus_wishlist(request):
     if request.method == "GET":
         prod_id = request.GET['prod_id']
@@ -389,7 +394,8 @@ def plus_wishlist(request):
             'message': 'Wishlist Added Successfully',
         }
         return JsonResponse(data)
-    
+
+@login_required    
 def minus_wishlist(request):
     if request.method == "GET":
         prod_id = request.GET['prod_id']
