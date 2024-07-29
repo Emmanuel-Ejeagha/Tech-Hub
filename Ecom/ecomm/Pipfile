@@ -11,6 +11,9 @@ django-allauth = "*"
 razorpay = "*"
 python-dotenv = "*"
 stripe = "*"
+django-heroku = "*"
+gunicorn = "*"
+cloudinary = "*"
 
 [dev-packages]
 
