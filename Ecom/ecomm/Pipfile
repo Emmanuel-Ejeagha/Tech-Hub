@@ -14,6 +14,7 @@ stripe = "*"
 django-heroku = "*"
 gunicorn = "*"
 cloudinary = "*"
+python-decouple = "*"
 
 [dev-packages]
 

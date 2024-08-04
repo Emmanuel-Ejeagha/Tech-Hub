@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+# Configure Django App for Heroku.
+import django_heroku
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -288,3 +290,4 @@ STRIPE_SECRET_KEY = os.environ.get('SECRET_KEY')
 # debug prints
 # print(f"Stripe Public Key: {STRIPE_PUBLIC_KEY}")
 # print(f"Stripe Secret Key: {STRIPE_SECRET_KEY}")
+django_heroku.settings(locals())
