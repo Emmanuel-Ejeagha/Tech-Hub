@@ -24,19 +24,11 @@
 
   </head>
   <body>
-  <!-- =====nav bar section===== -->
-  <header>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark position-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-   
-    <!-- <img src="{% static 'images/product/logo4.png' %}" href="/" width="70" height="50" alt="E-Shop Logo"> -->
-    <div class="logo me-auto  p-1" style="border-radius: 20%; background-color: #E2E2B6">
-    <h1>
-        <a href="/" style="text-decoration: none; color: #03346E;">Tek<img src="{% static 'images/banner/cart.svg' %}"  alt="" height="25">Mall</a></h1></i>
-        <!-- Uncomment below if you prefer to use an image logo -->
-        <!-- <a href="index.html"><img src="assets/img/logo.png" alt="" class="img-fluid"></a>-->
-      </div>
-  
+    <a class="navbar-brand" href="/">
+      <img src="{% static 'images/product/logo4.png' %}" href="/" width="70" height="50" alt="E-Shop Logo">
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -84,8 +76,7 @@
                   {% csrf_token %}
                   <button type="submit" class="dropdown-item">Logout</button>
               </form>
-          </li>
-          </ul>
+          </li>          </ul>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{% url 'showcart' %}">Cart</a>
@@ -135,14 +126,11 @@
     </div>
   </div>
 </nav>
-<!-- =====end of nav bar==== -->
-</header>
 
     {% block banner-slider %}{% endblock banner-slider %} 
     {% block info %} {% endblock info %}
     {% block main-content%} {% endblock main-content %}
     {% block payment-gateway %}{% endblock payment-gateway %}
-    {% block sponsors %} {% endblock sponsors %}
 
     <br><br>
     <br><br>
