@@ -2,112 +2,80 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.views import View
-from django.contrib.auth.models import AnonymousUser
 from django.http import JsonResponse
 from .models import Customer, Product, Cart, Payment, OrderPlaced, Wishlist
 from django.db.models import Count, Q
 from .forms import CustomerRegistrationForm, CustomerProfileForm
 from django.contrib import messages
 from django.conf import settings
-import stripe 
+import stripe
 
 # Configure Stripe with the secret API key from settings.
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+def get_cart_and_wishlist_counts(user):
+    """Helper function to get cart and wishlist item counts for an authenticated user."""
+    totalitem = Cart.objects.filter(user=user).count()
+    wishitem = Wishlist.objects.filter(user=user).count()
+    return totalitem, wishitem
+
 def home(request):
     """Render the home page."""
-    totalitem = 0
-    wishitem = 0
+    totalitem, wishitem = 0, 0
     if request.user.is_authenticated:
-        totalitem = len(Cart.objects.filter(user=request.user))
-        wishitem = len(Wishlist.objects.filter(user=request.user))
-    return render(request, 'app/home.html', locals())
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+    return render(request, 'app/home.html', {'totalitem': totalitem, 'wishitem': wishitem})
 
-
-# @login_required
 def about(request):
     """Render the about page."""
-    totalitem = 0
-    wishitem = 0
+    totalitem, wishitem = 0, 0
     if request.user.is_authenticated:
-        wishitem = len(Wishlist.objects.filter(user=request.user))
-        totalitem = len(Cart.objects.filter(user=request.user))
-    return render(request, 'app/about.html', locals())
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+    return render(request, 'app/about.html', {'totalitem': totalitem, 'wishitem': wishitem})
 
-# @login_required
 def contact(request):
     """Render the contact page."""
-    totalitem = 0
-    wishitem = 0
+    totalitem, wishitem = 0, 0
     if request.user.is_authenticated:
-        wishitem = len(Wishlist.objects.filter(user=request.user))
-        totalitem = len(Cart.objects.filter(user=request.user))    
-    return render(request, 'app/contact.html', locals())
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+    return render(request, 'app/contact.html', {'totalitem': totalitem, 'wishitem': wishitem})
 
-# @method_decorator(login_required, name="dispatch")
+@method_decorator(login_required, name='dispatch')
 class CategoryView(View):
     """View to display products by category."""
     def get(self, request, val):
-        totalitem = 0
-        wishitem = 0
+        totalitem, wishitem = 0, 0
         if request.user.is_authenticated:
-            wishitem = len(Wishlist.objects.filter(user=request.user))
-            totalitem = len(Cart.objects.filter(user=request.user))
-        product = Product.objects.filter(category=val)
-        title = Product.objects.filter(category=val).values('title')
-        return render(request, "app/category.html", locals())
+            totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+        products = Product.objects.filter(category=val)
+        titles = products.values('title')
+        return render(request, "app/category.html", {'products': products, 'titles': titles, 'totalitem': totalitem, 'wishitem': wishitem})
 
-# @method_decorator(login_required, name="dispatch")
-class CategoryTitle(View):
+@method_decorator(login_required, name='dispatch')
+class CategoryTitleView(View):
     """View to display products by title within a category."""
     def get(self, request, val):
-        product = Product.objects.filter(title=val)
-        title = Product.objects.filter(category=product[0].category).values('title')
-        totalitem = 0
-        wishitem = 0
-        if request.user.is_authenticated:
-            wishitem = len(Wishlist.objects.filter(user=request.user))
-            totalitem = len(Cart.objects.filter(user=request.user))
-        return render(request, "app/category.html", locals())
+        products = Product.objects.filter(title=val)
+        if products.exists():
+            titles = Product.objects.filter(category=products[0].category).values('title')
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user) if request.user.is_authenticated else (0, 0)
+        return render(request, "app/category.html", {'products': products, 'titles': titles, 'totalitem': totalitem, 'wishitem': wishitem})
 
-# @method_decorator(login_required, name="dispatch")
-class ProductDetail(View):
+@method_decorator(login_required, name='dispatch')
+class ProductDetailView(View):
     """View to display detailed information about a single product."""
-    # def get(self, request, pk):
-    #     product = Product.objects.get(pk=pk)
-    #     wishlist = Wishlist.objects.filter(Q(product=product) & Q(user=request.user))
-    #     totalitem = 0
-    #     if request.user.is_authenticated:
-    #         totalitem = len(Cart.objects.filter(user=request.user))
-    #     return render(request, "app/productdetail.html", locals())
     def get(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
-        wishlist = None
-        totalitem = 0
+        wishlist = Wishlist.objects.filter(product=product, user=request.user) if request.user.is_authenticated else None
+        totalitem = Cart.objects.filter(user=request.user).count() if request.user.is_authenticated else 0
+        return render(request, "app/productdetail.html", {'product': product, 'wishlist': wishlist, 'totalitem': totalitem})
 
-        if request.user.is_authenticated:
-            wishlist = Wishlist.objects.filter(Q(product=product) & Q(user=request.user))
-            totalitem = Cart.objects.filter(user=request.user).count()
-        
-        context = {
-            'product': product,
-            'wishlist': wishlist,
-            'totalitem': totalitem,
-        }
-
-        return render(request, "app/productdetail.html", context)
-
-# @method_decorator(login_required, name="dispatch")
 class CustomerRegistrationView(View):
     """View to handle customer registration."""
     def get(self, request):
         form = CustomerRegistrationForm()
-        totalitem = 0
-        wishitem = 0
-        if request.user.is_authenticated:
-            wishitem = len(Wishlist.objects.filter(user=request.user))
-            totalitem = len(Cart.objects.filter(user=request.user))
-        return render(request, 'app/signup.html', {'form': form})
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user) if request.user.is_authenticated else (0, 0)
+        return render(request, 'app/signup.html', {'form': form, 'totalitem': totalitem, 'wishitem': wishitem})
     
     def post(self, request):
         form = CustomerRegistrationForm(request.POST)
@@ -115,37 +83,22 @@ class CustomerRegistrationView(View):
             form.save()
             messages.success(request, "Registration Successful")
             return redirect('login')
-        else:
-            messages.warning(request, "Invalid Input Data")
+        messages.warning(request, "Invalid Input Data")
         return render(request, 'app/signup.html', {'form': form})
 
-@method_decorator(login_required, name="dispatch")
+@method_decorator(login_required, name='dispatch')
 class ProfileView(View):
     """View to handle customer profile."""
     def get(self, request):
         form = CustomerProfileForm()
-        totalitem = 0
-        wishitem = 0
-        if request.user.is_authenticated:
-            wishitem = len(Wishlist.objects.filter(user=request.user))
-            totalitem = len(Cart.objects.filter(user=request.user))
-        return render(request, 'app/profile.html', {'form': form})
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+        return render(request, 'app/profile.html', {'form': form, 'totalitem': totalitem, 'wishitem': wishitem})
     
     def post(self, request):
         form = CustomerProfileForm(request.POST)
         if form.is_valid():
-            user = request.user
-            # Save the customer's profile details.
-            name = form.cleaned_data['name']
-            locality = form.cleaned_data['locality']
-            city = form.cleaned_data['city']
-            mobile = form.cleaned_data['mobile']
-            state = form.cleaned_data['state']
-            zipcode = form.cleaned_data['zipcode']
-            
-            reg = Customer(user=user, name=name, locality=locality, mobile=mobile, city=city, state=state, zipcode=zipcode)
-            reg.save()
-            messages.success(request, "Congratulations! Profile Saved Successfully")
+            Customer.objects.update_or_create(user=request.user, defaults=form.cleaned_data)
+            messages.success(request, "Profile Updated Successfully")
         else:
             messages.warning(request, "Invalid Input Data")
         return render(request, 'app/profile.html', {'form': form})
@@ -153,36 +106,94 @@ class ProfileView(View):
 @login_required
 def address(request):
     """View to display the customer's addresses."""
-    add = Customer.objects.filter(user=request.user)
-    totalitem = 0
-    wishitem = 0
-    if request.user.is_authenticated:
-        wishitem = len(Wishlist.objects.filter(user=request.user))
-        totalitem = len(Cart.objects.filter(user=request.user))
-    return render(request, 'app/address.html', {'add': add})
+    addresses = Customer.objects.filter(user=request.user)
+    totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+    return render(request, 'app/address.html', {'addresses': addresses, 'totalitem': totalitem, 'wishitem': wishitem})
 
-@method_decorator(login_required, name="dispatch")
-class UpdateAddress(View):
+@method_decorator(login_required, name='dispatch')
+class UpdateAddressView(View):
     """View to update a customer's address."""
     def get(self, request, pk):
-        add = Customer.objects.get(pk=pk)
-        form = CustomerProfileForm(instance=add)
-        totalitem = 0
-        wishitem = 0
-        if request.user.is_authenticated:
-            wishitem = len(Wishlist.objects.filter(user=request.user))
-            totalitem = len(Cart.objects.filter(user=request.user))
-        return render(request, 'app/updateAddress.html', {'form': form})
+        address = get_object_or_404(Customer, pk=pk)
+        form = CustomerProfileForm(instance=address)
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+        return render(request, 'app/updateAddress.html', {'form': form, 'totalitem': totalitem, 'wishitem': wishitem})
     
     def post(self, request, pk):
-        add = Customer.objects.get(pk=pk)
-        form = CustomerProfileForm(request.POST, instance=add)
+        address = get_object_or_404(Customer, pk=pk)
+        form = CustomerProfileForm(request.POST, instance=address)
         if form.is_valid():
             form.save()
-            messages.success(request, "Profile Updated Successfully")
+            messages.success(request, "Address Updated Successfully")
         else:
             messages.warning(request, "Invalid Input Data")
         return redirect('address')
+
+@login_required
+def add_to_cart(request):
+    """Add a product to the customer's cart."""
+    product_id = request.GET.get('prod_id')
+    product = get_object_or_404(Product, id=product_id)
+    Cart.objects.create(user=request.user, product=product)
+    return redirect('show_cart')
+
+@login_required
+def show_cart(request):
+    """Display the customer's cart."""
+    cart_items = Cart.objects.filter(user=request.user)
+    totalamount = sum(item.quantity * item.product.discounted_price for item in cart_items) + 1000
+    totalitem = Cart.objects.filter(user=request.user).count()
+    return render(request, 'app/addtocart.html', {'cart_items': cart_items, 'totalamount': totalamount, 'totalitem': totalitem})
+
+@method_decorator(login_required, name='dispatch')
+class CheckoutView(View):
+    """View to handle the checkout process."""
+    def post(self, request):
+        cart_items = Cart.objects.filter(user=request.user)
+        totalamount = sum(item.quantity * item.product.discounted_price for item in cart_items) + 1000
+        stripeamount = int(totalamount * 100)  # Stripe amount in kobo
+
+        try:
+            # Create a Stripe checkout session.
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'ngn',
+                        'product_data': {
+                            'name': 'Total Purchase',
+                        },
+                        'unit_amount': stripeamount,
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=f'http://localhost:8000/success/?session_id={{CHECKOUT_SESSION_ID}}',
+                cancel_url='http://localhost:8000/cancel/',
+            )
+            # Save the payment details.
+            Payment.objects.create(
+                user=request.user,
+                amount=totalamount,
+                stripe_order_id=checkout_session.id,
+                stripe_payment_status=checkout_session.status
+            )
+            return JsonResponse({'id': checkout_session.id})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    def get(self, request):
+        cart_items = Cart.objects.filter(user=request.user)
+        totalamount = sum(item.quantity * item.product.discounted_price for item in cart_items) + 1000
+        totalitem, wishitem = get_cart_and_wishlist_counts(request.user)
+        addresses = Customer.objects.filter(user=request.user)
+        return render(request, 'app/checkout.html', {
+            'cart_items': cart_items,
+            'totalamount': totalamount,
+            'totalitem': totalitem,
+            'wishitem': wishitem,
+            'addresses': addresses
+        })
 
 
 @login_required
